@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SDN CLOTH</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{font-family:Arial,sans-serif;color:#f5f5f5;background:#101116}
 *{box-sizing:border-box}
@@ -52,15 +53,35 @@ nav button span{display:block;font-size:24px;margin-bottom:5px}
 <button onclick="setPage('contact')"><span>✉</span>Связь</button>
 </nav>
 <script>
+const SUPABASE_URL = "https://mjqgajynpgdcwiosnvpf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Yjkf3xNvSTM35872Q8eBUA_WvQ0yg9K";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const tg=window.Telegram?.WebApp;
 if(tg){tg.ready();tg.expand()}
 const sellerUsername="";
-const items=[
+let items=[
 {id:1,name:"Худи Oversize",category:"Худи",size:"L",price:65,img:"https://placehold.co/400x520/303644/ffffff?text=Hoodie",description:"Отличное состояние"},
 {id:2,name:"Джинсы Vintage",category:"Джинсы",size:"M",price:55,img:"https://placehold.co/400x520/42404b/ffffff?text=Jeans",description:"Винтажный деним"},
 {id:3,name:"Футболка Basic",category:"Футболки",size:"XL",price:25,img:"https://placehold.co/400x520/444444/ffffff?text=T-Shirt",description:"Хорошее состояние"},
 {id:4,name:"Куртка Street",category:"Куртки",size:"M",price:90,img:"https://placehold.co/400x520/303a45/ffffff?text=Jacket",description:"Без дефектов"}
 ];
+async function loadProducts() {
+  const { data, error } = await db
+    .from('products')
+    .select('*');
+
+  if (error) {
+    console.error('Ошибка загрузки товаров:', error);
+    return;
+  }
+
+  items = data.map(p => ({
+    ...p,
+    img: Array.isArray(p.images) ? p.images[0] : null
+  }));
+
+  render();
+}
 let category="Все",page="catalog";
 let favorites=new Set(),cart=new Set();
 function setCategory(c){category=c;page="catalog";render()}
@@ -84,6 +105,7 @@ const filtered=items.filter(x=>(page!=="catalog"||category==="Все"||x.categor
 box.innerHTML=filtered.length?filtered.map(x=>'<article class="product"><img src="'+x.img+'" alt=""><div class="info"><div class="name">'+x.name+'</div><div class="details">Размер: '+x.size+' · '+x.description+'</div><div class="price">'+x.price+' BYN</div><div class="actions"><button onclick="toggleCart('+x.id+')">'+(cart.has(x.id)?"Убрать":"В корзину")+'</button><button class="heart" onclick="toggleFavorite('+x.id+')">'+(favorites.has(x.id)?"♥":"♡")+'</button></div></div></article>').join(""):'<p class="empty">Здесь пока пусто</p>';
 }
 render();
+loadProducts();
 </script>
 </body>
 </html>
