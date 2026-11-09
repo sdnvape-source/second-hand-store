@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SDN CLOTH</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{font-family:Arial,sans-serif;color:#f5f5f5;background:#101116}
+*{box-sizing:border-box}
+body{margin:0;padding-bottom:90px}
+header{padding:24px 16px 16px;background:#191b24}
+h1{font-size:25px;margin:0 0 18px}
+input{width:100%;padding:15px;border:0;border-radius:12px;background:#292c38;color:white;font-size:15px}
+.categories{display:flex;gap:8px;overflow-x:auto;padding:18px 16px}
+.categories button{white-space:nowrap;background:#252936;color:#ddd;border:0;padding:12px 17px;border-radius:22px}
+.categories button.active{background:#3984ed;color:white}
+.section{padding:0 16px}
+.section h2{font-size:20px}
+.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product{background:#20222c;border-radius:16px;overflow:hidden}
+.product img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#333}
+.info{padding:12px}
+.name{font-weight:bold;font-size:14px;min-height:34px}
+.details{font-size:12px;color:#aeb2c1;margin:7px 0}
+.price{font-weight:bold;color:#73d8c0;font-size:19px}
+.actions{display:flex;gap:6px;margin-top:12px}
+.actions button{background:#347de0;border:0;color:white;padding:10px 5px;border-radius:9px;flex:1;cursor:pointer}
+.actions .heart{flex:0 0 35px;background:#393b49}
+nav{position:fixed;bottom:0;left:0;right:0;background:#1b1d27;display:flex;justify-content:space-around;padding:13px 4px 20px;border-top:1px solid #333}
+nav button{border:0;background:none;color:#c7c9d4;font-size:12px;cursor:pointer}
+nav button span{display:block;font-size:24px;margin-bottom:5px}
+.empty{color:#aaa;padding:24px 0}
+.contact{background:#347de0;color:white;padding:14px;border-radius:12px;border:0;width:100%;margin:15px 0}
+</style>
+</head>
+<body>
+<header>
+<h1>🛍️ SDN CLOTH</h1>
+<input id="search" placeholder="🔎 Найти одежду..." oninput="render()">
+</header>
+<div class="categories" id="categories"></div>
+<main class="section">
+<h2 id="heading">Все вещи</h2>
+<div class="products" id="products"></div>
+</main>
+<nav>
+<button onclick="setPage('catalog')"><span>⌂</span>Каталог</button>
+<button onclick="setPage('favorites')"><span>♡</span>Избранное</button>
+<button onclick="setPage('cart')"><span>🛒</span>Корзина</button>
+<button onclick="setPage('contact')"><span>✉</span>Связь</button>
+</nav>
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand()}
+const sellerUsername="";
+const items=[
+{id:1,name:"Худи Oversize",category:"Худи",size:"L",price:65,img:"https://placehold.co/400x520/303644/ffffff?text=Hoodie",description:"Отличное состояние"},
+{id:2,name:"Джинсы Vintage",category:"Джинсы",size:"M",price:55,img:"https://placehold.co/400x520/42404b/ffffff?text=Jeans",description:"Винтажный деним"},
+{id:3,name:"Футболка Basic",category:"Футболки",size:"XL",price:25,img:"https://placehold.co/400x520/444444/ffffff?text=T-Shirt",description:"Хорошее состояние"},
+{id:4,name:"Куртка Street",category:"Куртки",size:"M",price:90,img:"https://placehold.co/400x520/303a45/ffffff?text=Jacket",description:"Без дефектов"}
+];
+let category="Все",page="catalog";
+let favorites=new Set(),cart=new Set();
+function setCategory(c){category=c;page="catalog";render()}
+function setPage(p){page=p;render()}
+function toggleFavorite(id){favorites.has(id)?favorites.delete(id):favorites.add(id);render()}
+function toggleCart(id){cart.has(id)?cart.delete(id):cart.add(id);render()}
+function contact(){
+if(!sellerUsername){alert("Контакт продавца подключим позже");return}
+window.open("https://t.me/"+sellerUsername,"_blank")
+}
+function render(){
+const cats=["Все",...new Set(items.map(x=>x.category))];
+document.getElementById("categories").innerHTML=cats.map(c=>'<button class="'+(c===category?'active':'')+'" onclick="setCategory('+JSON.stringify(c).replace(/"/g,"&quot;")+')">'+c+'</button>').join("");
+document.getElementById("categories").style.display=page==="catalog"?"flex":"none";
+document.getElementById("search").style.display=page==="catalog"?"block":"none";
+const heading=document.getElementById("heading"),box=document.getElementById("products");
+if(page==="contact"){heading.textContent="Связь с продавцом";box.innerHTML='<div><p>Есть вопросы по вещам? Напиши нам в Telegram.</p><button class="contact" onclick="contact()">Написать продавцу</button></div>';return}
+heading.textContent=page==="catalog"?"Все вещи":page==="favorites"?"Избранное":"Корзина";
+const q=document.getElementById("search").value.toLowerCase();
+const filtered=items.filter(x=>(page!=="catalog"||category==="Все"||x.category===category)&&(page!=="favorites"||favorites.has(x.id))&&(page!=="cart"||cart.has(x.id))&&(page!=="catalog"||x.name.toLowerCase().includes(q)));
+box.innerHTML=filtered.length?filtered.map(x=>'<article class="product"><img src="'+x.img+'" alt=""><div class="info"><div class="name">'+x.name+'</div><div class="details">Размер: '+x.size+' · '+x.description+'</div><div class="price">'+x.price+' BYN</div><div class="actions"><button onclick="toggleCart('+x.id+')">'+(cart.has(x.id)?"Убрать":"В корзину")+'</button><button class="heart" onclick="toggleFavorite('+x.id+')">'+(favorites.has(x.id)?"♥":"♡")+'</button></div></div></article>').join(""):'<p class="empty">Здесь пока пусто</p>';
+}
+render();
+</script>
+</body>
+</html>
+  
